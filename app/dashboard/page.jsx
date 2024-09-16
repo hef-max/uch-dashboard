@@ -45,11 +45,11 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex' }}>
-        <div style={{ width: '50%' }}>
+      <div className="dashboard-container">
+        <div className="table-container">
           <DashboardTable columns={columns} data={data} onRowClick={handleRowClick} />
         </div>
-        <div style={{ width: '50%' }}>
+        <div className="map-container">
           <Map data={data} center={selectedCoordinates} />
         </div>
       </div>
