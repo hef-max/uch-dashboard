@@ -70,6 +70,10 @@ def get_images_from_s3():
         print(f"Error fetching images from S3: {str(e)}")
         return None
 
+@app.route('/', methods=['GET'])
+def hello():
+    return jsonify("Hello")
+
 @app.route('/api/images', methods=['GET'])
 def fetch_images():
     images, timestamp = get_images_from_s3()
