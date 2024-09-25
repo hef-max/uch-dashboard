@@ -4,9 +4,9 @@ from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask import Blueprint, jsonify, request
 from flask_pymongo import PyMongo
-from models import User, db
+from models import User, Coordinate, db
 from flask_migrate import Migrate
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
 import boto3
 import os
@@ -14,6 +14,7 @@ import os
 auth = Blueprint('auth', __name__)
 
 load_dotenv()
+
 mongo = PyMongo()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -21,7 +22,7 @@ login_manager = LoginManager()
 app = Flask(__name__)
 app.secret_key = '_5#y2L"F4Q8z\n\xec]//'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///uch.db'
-app.config["MONGO_URI"] = "mongodb+srv://hefrykun10:WQaLHPWCztA3K3vl@cluster0.ujs9ich.mongodb.net/uch_db"
+app.config["MONGO_URI"] = os.getenv('MONGO_URI')
 
 mongo.init_app(app)
 db.init_app(app)
@@ -42,8 +43,8 @@ def load_user(user_id):
 
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = 'ap-southeast-2'
-S3_BUCKET_NAME = 'uch-app'
+AWS_REGION = os.getenv('AWS_REGION')
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 
 s3_client = boto3.client(
     's3',
@@ -60,10 +61,7 @@ def get_images_from_s3():
                 f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{item['Key']}"
                 for item in response['Contents']
             ]
-            timestamp = [
-                item['LastModified'] for item in response['Contents']
-            ]
-            return images, timestamp
+            return images
         else:
             return []
     except Exception as e:
@@ -76,18 +74,26 @@ def hello():
 
 @app.route('/api/images', methods=['GET'])
 def fetch_images():
-    images, timestamp = get_images_from_s3()
-    if images is not None:
+    images = get_images_from_s3()
+    coordinates = list(mongo.db.coordinate.find())
+
+    if coordinates and images:
         data = []
         for idx, image in enumerate(images):
-            data.append({
-                'id': idx + 1,
-                'timestamp': timestamp[idx],  # Contoh timestamp, bisa dinamis sesuai kebutuhan
-                'latitude': -6.3 + (idx * 0.01),     # Latitude contoh yang berubah per gambar
-                'longitude': 106.8 + (idx * 0.01),   # Longitude contoh yang berubah per gambar
-                'image': image,
-                'labels': "Pshycal Abuse"
-            })
+            coordinate = coordinates[idx] if idx < len(coordinates) else None
+            if coordinate:
+                timestamp = coordinate.get('timestamp')
+                formatted_timestamp = timestamp.strftime('%A, %d %B %Y, %H:%M:%S') if timestamp else None
+                data.append({
+                    'id': idx + 1,
+                    'timestamp': formatted_timestamp,
+                    'latitude': coordinate.get('latitude'),
+                    'longitude': coordinate.get('longitude'),
+                    'image': image,
+                    'labels': coordinate.get('label')
+                })
+            else:
+                break
         return jsonify(data)
     else:
         return jsonify({'error': 'Error fetching images'}), 500
