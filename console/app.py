@@ -4,9 +4,9 @@ from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask import Blueprint, jsonify, request
 from flask_pymongo import PyMongo
-from models import User, Coordinate, db
+from models import User, db
 from flask_migrate import Migrate
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, logout_user
 
 import boto3
 import os
@@ -107,18 +107,18 @@ def login():
         
         user_data = mongo.db.users.find_one({"email": email})
         user = User.query.filter_by(email=email).first()
+        hashed_password = user_data.get('password')
 
-        if not user_data and user:
+        if not user_data and not user:
             return jsonify(message="Invalid email or password"), 401
         
-        if user and user_data:
-            if check_password_hash(user.password, password):
+        if user_data and user:
+            if check_password_hash(hashed_password, password):
                 login_user(user, remember=True)
                 return jsonify(message="Login Succesfully"), 200
             else:
                 return jsonify(message="Incorrect password, try again."), 401
         
-        hashed_password = user_data.get('password')
         if not check_password_hash(hashed_password, password):
             return jsonify(message="Invalid email or password"), 401
         
@@ -140,8 +140,8 @@ def register():
             password=password
         )
 
-        db.session.add(new_user)
-        db.session.commit()
+        # db.session.add(new_user)
+        # db.session.commit()
 
         user_dict = {
             "id": new_user.id,
@@ -162,4 +162,4 @@ def logout():
     return jsonify(message="Logout successful"), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

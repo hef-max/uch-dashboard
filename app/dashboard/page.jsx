@@ -14,7 +14,7 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/images');
+      const response = await fetch('http://160.19.166.39:5000/api/images');
       const updatedData = await response.json();
       setData(updatedData);
     } catch (error) {
@@ -26,7 +26,7 @@ const Dashboard = () => {
     fetchData(); 
     const intervalId = setInterval(() => {
       fetchData();
-    }, 10000);  // 10000ms = 10 seconds
+    }, 10000);
 
     return () => clearInterval(intervalId);
   }, []);

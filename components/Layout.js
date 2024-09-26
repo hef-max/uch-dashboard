@@ -10,14 +10,14 @@ export default function Layout({ children }) {
   
   const handleLogout = async () => {
     try {
-        const res = await fetch("http://localhost:5000/logout", {
+        const res = await fetch("http://160.19.166.39:5000/logout", {
             method: "GET",
             credentials: 'include'
         });
   
         if (res.ok) {
             document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            router.push("http://localhost:3000/");
+            router.push("http://160.19.166.39:3000/");
         } else {
             console.log("Logout not successfully");
         }
